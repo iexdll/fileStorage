@@ -10,11 +10,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const (
-	MB = 1 << 20
-	FOLDERUPLOAD = "E:/file/"
+	MB           = 1 << 20
+	FOLDERUPLOAD = "C:/Users/SmirnovA/PhpstormProjects/backend/uploads/refund/"
 )
 
 func main() {
@@ -64,7 +65,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		fileID := newGUID();
+		fileID := newGUID()
 		pathFile := FOLDERUPLOAD + fileID
 
 		fileSrv, err := os.Create(pathFile)
@@ -98,7 +99,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fi, err := fileOpen.Stat();
+		fi, err := fileOpen.Stat()
 
 		if kind.MIME.Value == "image/jpeg" ||
 			kind.MIME.Value == "image/png" ||
@@ -122,7 +123,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 		fileSrv.Close()
 		fileOpen.Close()
-		err = os.Rename(pathFile, pathFile + "." + kind.Extension)
+		err = os.Rename(pathFile, pathFile+"."+kind.Extension)
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 			return
@@ -137,7 +138,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func newGUID() (string) {
+func newGUID() string {
 
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
@@ -147,5 +148,5 @@ func newGUID() (string) {
 
 	uuid := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 
-	return uuid
+	return strings.ToUpper(uuid)
 }
