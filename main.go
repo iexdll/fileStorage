@@ -108,6 +108,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 			kind.MIME.Value == "application/msword" ||
 			kind.MIME.Value == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
 			kind.MIME.Value == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+			kind.MIME.Value == "application/vnd.ms-powerpoint" ||
 			kind.MIME.Value == "application/pdf" {
 		} else {
 			http.Error(w, "Тип файла "+kind.MIME.Value+" не доступен для загрузки", 400)
