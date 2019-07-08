@@ -106,6 +106,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 			kind.MIME.Value == "image/gif" ||
 			kind.MIME.Value == "image/bmp" ||
 			kind.MIME.Value == "application/msword" ||
+			kind.MIME.Value == "application/vnd.ms-excel" ||
 			kind.MIME.Value == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
 			kind.MIME.Value == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
 			kind.MIME.Value == "application/vnd.ms-powerpoint" ||
