@@ -166,3 +166,24 @@ func newGUID() string {
 
 	return strings.ToUpper(uuid)
 }
+
+/*func getFiles(w http.ResponseWriter, r *http.Request) {
+
+	files, err := ioutil.ReadDir("\\\\domain\\corp\\1C\\1CBase\\WorkTrade\\ЗаявкаПокупателяНаВозврат\\")
+
+	if err != nil {
+		http.Error(w, "Ошибка чтения директории " + err.Error(), 400)
+		return
+	}
+
+	dir := make([]string, 0)
+	for _, file := range files {
+		if file.IsDir() {
+			dir = append(dir, file.Name())
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(dir)
+
+}*/
