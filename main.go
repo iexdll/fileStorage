@@ -3,9 +3,11 @@ package main
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fileStorage/mgoDB"
 	"fileStorage/params"
 	"flag"
 	"fmt"
+	"github.com/globalsign/mgo/bson"
 	"github.com/gorilla/mux"
 	"github.com/h2non/filetype"
 	"io"
@@ -13,27 +15,31 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
-const (
-	MB = 1 << 20
-	//FOLDERUPLOAD = "C:/Users/SmirnovA/PhpstormProjects/backend/uploads/refund/"
-	//FOLDERUPLOAD = "/var/www/Favorit/uploads/refund/"
-)
+const MB = 1 << 20
+const EmptyRef = "00000000-0000-0000-0000-000000000000"
 
 func main() {
 
+	connectionString := flag.String("connectionString", "mongodb://sa:nokia@10.75.40.12:27017", "database server connection string")
 	folderUpload := flag.String("folderUpload", "C:/Users/SmirnovA/PhpstormProjects/backend/uploads/refund/", "Путь к папке, где будут храниться файлы")
+	folderStorage := flag.String("folderStorage", "E:/file/", "Путь к папке с хранилищем от 1С")
 	listen := flag.String("listen", ":8585", "address and port")
 	flag.Parse()
 
+	mgoDB.NewConnectDB(*connectionString)
+
 	params.SetFolderUpload(*folderUpload)
+	params.SetFolderStorage(*folderStorage)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/go/file/", uploadFile).Methods("POST")
+	router.HandleFunc("/go/file/{id}/", getFile).Methods("GET")
 	router.HandleFunc("/", indexPage)
 
-	log.Println("Файловый сервис запущен. Папка хранения файлов " + params.GetFolderUpload() + " Порт " + *listen)
+	log.Println("Файловый сервис запущен. Папка хранения файлов " + params.GetFolderUpload() + " Порт " + *listen + " Папка хранилища " + params.GetFolderStorage())
 
 	log.Fatal(http.ListenAndServe(*listen, router))
 
@@ -167,23 +173,54 @@ func newGUID() string {
 	return strings.ToUpper(uuid)
 }
 
-/*func getFiles(w http.ResponseWriter, r *http.Request) {
+type FileAttach struct {
+	ID   string    `bson:"_id"`
+	Ext  string    `bson:"extension"`
+	Date time.Time `bson:"dateCreation"`
+}
 
-	files, err := ioutil.ReadDir("\\\\domain\\corp\\1C\\1CBase\\WorkTrade\\ЗаявкаПокупателяНаВозврат\\")
+func NewFileAttach() *FileAttach {
+	return &FileAttach{
+		ID: EmptyRef,
+	}
+}
 
-	if err != nil {
-		http.Error(w, "Ошибка чтения директории " + err.Error(), 400)
+func getFile(w http.ResponseWriter, r *http.Request) {
+
+	getparams := mux.Vars(r)
+	fileId := getparams["id"]
+
+	db := mgoDB.GetConnectDB().Copy()
+	defer db.Close()
+
+	fileAttach := NewFileAttach()
+	selector := bson.M{"fileId": strings.ToUpper(fileId)}
+	_ = db.DB("priceService").C("attachments").Find(selector).One(&fileAttach)
+
+	if EmptyRef == fileAttach.ID {
+		log.Println("GetFile: файл " + fileId + " не найден в БД")
+		http.Error(w, "Файл не найден в БД", 404)
 		return
 	}
 
-	dir := make([]string, 0)
-	for _, file := range files {
-		if file.IsDir() {
-			dir = append(dir, file.Name())
-		}
+	path := params.GetFolderStorage()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Println("GetFile: каталог с файлами " + path + " недоступен")
+		http.Error(w, "Ошибка чтения каталога", 400)
+		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(dir)
+	MST, _ := time.LoadLocation("Europe/Moscow")
+	date := fileAttach.Date.In(MST).Format("2006.01.02")
 
-}*/
+	filePath := path + date + "\\" + strings.ToLower(fileId) + "." + strings.ToLower(fileAttach.Ext)
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		log.Println("GetFile: файл " + filePath + " не найден")
+		http.Error(w, "Файл не найден", 404)
+		return
+	}
+
+	http.ServeFile(w, r, filePath)
+
+}
