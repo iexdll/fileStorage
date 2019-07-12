@@ -3,6 +3,8 @@ package main
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fileStorage/params"
+	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/h2non/filetype"
@@ -14,19 +16,26 @@ import (
 )
 
 const (
-	MB           = 1 << 20
-	FOLDERUPLOAD = "C:/Users/SmirnovA/PhpstormProjects/backend/uploads/refund/"
+	MB = 1 << 20
+	//FOLDERUPLOAD = "C:/Users/SmirnovA/PhpstormProjects/backend/uploads/refund/"
+	//FOLDERUPLOAD = "/var/www/Favorit/uploads/refund/"
 )
 
 func main() {
+
+	folderUpload := flag.String("folderUpload", "C:/Users/SmirnovA/PhpstormProjects/backend/uploads/refund/", "Путь к папке, где будут храниться файлы")
+	listen := flag.String("listen", ":8585", "address and port")
+	flag.Parse()
+
+	params.SetFolderUpload(*folderUpload)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/go/file/", uploadFile).Methods("POST")
 	router.HandleFunc("/", indexPage)
 
-	log.Println("Файловый сервис запущен")
+	log.Println("Файловый сервис запущен. Папка хранения файлов " + params.GetFolderUpload() + " Порт " + *listen)
 
-	log.Fatal(http.ListenAndServe(":8282", router))
+	log.Fatal(http.ListenAndServe(*listen, router))
 
 }
 
@@ -66,7 +75,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fileID := newGUID()
-		pathFile := FOLDERUPLOAD + fileID
+		pathFile := params.GetFolderUpload() + fileID
 
 		fileSrv, err := os.Create(pathFile)
 		if err != nil {
@@ -90,11 +99,13 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 		kind, err := filetype.MatchReader(fileOpen)
 		if err != nil {
+			_ = os.Remove(pathFile)
 			http.Error(w, "Ошибка получения информации о файле "+err.Error(), 400)
 			return
 		}
 
 		if kind == filetype.Unknown {
+			_ = os.Remove(pathFile)
 			http.Error(w, "Неизвестный тип файла ", 400)
 			return
 		}
@@ -112,6 +123,8 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 			kind.MIME.Value == "application/vnd.ms-powerpoint" ||
 			kind.MIME.Value == "application/pdf" {
 		} else {
+			//_ = os.Remove(pathFile)
+			log.Println("UploadFiles: Тип файла " + kind.MIME.Value + " не доступен для загрузки " + pathFile)
 			http.Error(w, "Тип файла "+kind.MIME.Value+" не доступен для загрузки", 400)
 			return
 		}
