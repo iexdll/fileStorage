@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/h2non/filetype"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -36,6 +37,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/go/file/", uploadFile).Methods("POST")
+	router.HandleFunc("/go/file/delete/", deleteFile).Methods("GET")
 	router.HandleFunc("/go/file/{id}", getFile).Methods("GET")
 	router.HandleFunc("/", indexPage)
 
@@ -288,4 +290,61 @@ var hextable = [...]byte{
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+}
+
+func deleteFile(w http.ResponseWriter, r *http.Request) {
+
+	path := params.GetFolderUpload()
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Println("Ошибка открытия каталога с файлами " + path + ": " + err.Error())
+	}
+
+	idFiles := make([]string, len(files))
+
+	for index, file := range files {
+		s := strings.Split(file.Name(), ".")
+		idFiles[index] = s[0]
+	}
+
+	var idFilesNotDelete []string
+
+	db := mgoDB.GetConnectDB().Copy()
+	defer db.Close()
+
+	selector := bson.M{"$and": []bson.M{{"send": true}, {"fileId": bson.M{"$in": idFiles}}}}
+	iterator := db.DB("priceService").C("attachments").Find(selector).Iter()
+	data := bson.M{}
+	for iterator.Next(&data) {
+		idFilesNotDelete = append(idFilesNotDelete, data["fileId"].(string))
+	}
+
+	now := time.Now().AddDate(0, 0, -2)
+
+	for _, file := range files {
+
+		s := strings.Split(file.Name(), ".")
+
+		find := false
+		for _, value := range idFilesNotDelete {
+			if s[0] == value {
+				find = true
+			}
+		}
+
+		if find {
+
+			log.Println("Файл " + file.Name() + " еще не отправлен")
+
+		} else {
+
+			if now.After(file.ModTime()) {
+				log.Println("Удаляем. Дата создания", file.ModTime(), "меньше", now, file.Name())
+			} else {
+				log.Println("НЕ Удаляем. Дата создания", file.ModTime(), "больше", now, file.Name())
+			}
+
+		}
+	}
+
 }
