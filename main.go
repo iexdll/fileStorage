@@ -39,7 +39,7 @@ func main() {
 	router.HandleFunc("/go/file/", uploadFile).Methods("POST")
 	router.HandleFunc("/go/file/delete/", deleteFile).Methods("GET")
 	router.HandleFunc("/go/file/{id}", getFile).Methods("GET")
-	router.HandleFunc("/go/file/{owner}/{id}/", uploadFilePUT).Methods("PUT")
+	router.HandleFunc("/go/file/{date}/{owner}/{id}/", uploadFilePUT).Methods("PUT")
 	router.HandleFunc("/", indexPage)
 
 	log.Println("Файловый сервис запущен. Папка хранения файлов " + params.GetFolderUpload() + " Порт " + *listen + " Папка хранилища " + params.GetFolderStorage())
@@ -73,9 +73,9 @@ func uploadFilePUT(w http.ResponseWriter, r *http.Request) {
 	getParams := mux.Vars(r)
 	fileID := getParams["id"]
 	ownerID := getParams["owner"]
-	dt := time.Now()
+	date := getParams["date"]
 
-	filePath := params.GetFolderUpload() + dt.Format("20060201") + "/" + ownerID + "/"
+	filePath := params.GetFolderUpload() + date + "/" + ownerID + "/"
 
 	pathFile := filePath + fileID
 
