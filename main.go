@@ -75,7 +75,7 @@ func uploadFilePUT(w http.ResponseWriter, r *http.Request) {
 	ownerID := getParams["owner"]
 	date := getParams["date"]
 
-	filePath := params.GetFolderUpload() + date + "/" + ownerID + "/"
+	filePath := params.GetFolderUpload() + "/files/" + date + "/" + ownerID + "/"
 
 	pathFile := filePath + fileID
 
