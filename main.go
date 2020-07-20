@@ -125,13 +125,14 @@ func uploadFilePUT(w http.ResponseWriter, r *http.Request) {
 		kind.MIME.Value == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
 		kind.MIME.Value == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
 		kind.MIME.Value == "application/vnd.ms-powerpoint" ||
+		kind.MIME.Value == "video/x-msvideo" ||
 		kind.MIME.Value == "application/pdf" {
 	} else {
 		fileSrv.Close()
 		fileOpen.Close()
 		err = os.Remove(pathFile)
 		log.Println("UploadFiles: Тип файла " + kind.MIME.Value + " не доступен для загрузки " + pathFile)
-		http.Error(w, "Тип файла "+kind.MIME.Value+" не доступен для загрузки", 400)
+		http.Error(w, "Тип файла "+kind.MIME.Value+" не доступен для загрузки", 406)
 		return
 	}
 
