@@ -136,17 +136,22 @@ func uploadFilePUT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ext := kind.Extension
+	if kind.MIME.Value == "application/vnd.ms-powerpoint" {
+		ext = "doc"
+	}
+
 	fileInfo := FileUpload{
 		ID:   fileID,
-		Name: pathFile + "." + kind.Extension,
+		Name: pathFile + "." + ext,
 		Size: fi.Size(),
 		MIME: kind.MIME.Value,
-		Ext:  kind.Extension,
+		Ext:  ext,
 	}
 
 	fileSrv.Close()
 	fileOpen.Close()
-	err = os.Rename(pathFile, pathFile+"."+kind.Extension)
+	err = os.Rename(pathFile, pathFile+"."+ext)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
@@ -234,17 +239,22 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		ext := kind.Extension
+		if kind.MIME.Value == "application/vnd.ms-powerpoint" {
+			ext = "doc"
+		}
+
 		fileInfo := FileUpload{
 			ID:   fileID,
 			Name: p.FileName(),
 			Size: fi.Size(),
 			MIME: kind.MIME.Value,
-			Ext:  kind.Extension,
+			Ext:  ext,
 		}
 
 		fileSrv.Close()
 		fileOpen.Close()
-		err = os.Rename(pathFile, pathFile+"."+kind.Extension)
+		err = os.Rename(pathFile, pathFile+"."+ext)
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 			return
